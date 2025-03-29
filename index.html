@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thermometer Test</title>
+    <title>Live Chat Thermometer</title>
     <style>
         body {
             background-color: transparent;
@@ -25,35 +25,65 @@
             position: absolute;
             bottom: 0;
             background: red;
-            height: 50%;
             transition: height 0.5s ease-in-out;
         }
     </style>
 </head>
 <body>
     <div class="thermometer">
-        <div class="mercury" id="mercury"></div>
+        <div class="mercury" id="mercury" style="height: 50%;"></div>
     </div>
 
     <script>
-        let engagementScore = 50; // Default thermometer level
+        let apiKey = "AIzaSyDazxvM8C49xTkfWhkEV98HuhDj";  // Replace with your YouTube API Key
+        let liveChatId = ""; // Will store the live chat ID
+        let engagementScore = 50; // Start at neutral (50%)
 
-        function increaseTemperature() {
-            engagementScore = Math.min(100, engagementScore + 5);
-            updateThermometer();
+        async function getLiveChatId() {
+            let channelId = "UClnaUYp6ENPd5Dnn0F19rew"; // Replace with your YouTube Channel ID
+            let url = https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=active&broadcastType=all&key=${apiKey};
+
+            let response = await fetch(url);
+            let data = await response.json();
+
+            if (data.items.length > 0) {
+                liveChatId = data.items[0].snippet.liveChatId;
+                fetchChatMessages();
+            } else {
+                console.log("No live broadcast found.");
+            }
         }
 
-        function decreaseTemperature() {
-            engagementScore = Math.max(0, engagementScore - 5);
+        async function fetchChatMessages() {
+            if (!liveChatId) return;
+
+            let url = https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${liveChatId}&part=snippet&key=${apiKey};
+            let response = await fetch(url);
+            let data = await response.json();
+
+            data.items.forEach(message => {
+                let text = message.snippet.displayMessage;
+
+                if (text.includes("🔥")) {
+                    engagementScore += 2; // Raise temp by 2% per 🔥 emoji
+                } 
+                if (text.includes("💩")) {
+                    engagementScore -= 2; // Lower temp by 2% per 💩 emoji
+                }
+
+                engagementScore = Math.max(0, Math.min(100, engagementScore)); // Keep within 0-100%
+            });
+
             updateThermometer();
+            setTimeout(fetchChatMessages, 5000); // Fetch every 5 seconds
         }
 
         function updateThermometer() {
-            document.getElementById("mercury").style.height = engagementScore + "%";
+            let mercury = document.getElementById("mercury");
+            mercury.style.height = engagementScore + "%";
         }
-    </script>
 
-    <button onclick="increaseTemperature()">Increase 🔥</button>
-    <button onclick="decreaseTemperature()">Decrease 💩</button>
+        getLiveChatId();
+    </script>
 </body>
 </html>
