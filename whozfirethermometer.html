@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Chat Thermometer</title>
+    <style>
+        body {
+            background-color: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .thermometer {
+            width: 50px;
+            height: 300px;
+            background: lightgray;
+            border-radius: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+        .mercury {
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+            background: red;
+            transition: height 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="thermometer">
+        <div class="mercury" id="mercury" style="height: 50%;"></div>
+    </div>
+
+    <script>
+        let apiKey = "AIzaSyDazxvM8C49xTkfWhkEV98HuhDj-qwl8hI";  // Replace with your YouTube API Key
+        let liveChatId = ""; // Will store the live chat ID
+        let engagementScore = 50; // Start at neutral (50%)
+
+        async function getLiveChatId() {
+            let channelId = "UClnaUYp6ENPd5Dnn0F19rew"; // Replace with your YouTube Channel ID
+            let url = `https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet,liveStreamingDetails&broadcastStatus=active&broadcastType=all&key=${apiKey}`;
+
+            try {
+                let response = await fetch(url);
+                let data = await response.json();
+
+                if (data.items.length > 0 && data.items[0].liveStreamingDetails.liveChatId) {
+                    liveChatId = data.items[0].liveStreamingDetails.liveChatId;
+                    fetchChatMessages();
+                } else {
+                    console.log("No live broadcast with chat found.");
+                }
+            } catch (error) {
+                console.error("Error fetching live chat ID:", error);
+            }
+        }
+
+        async function fetchChatMessages() {
+            if (!liveChatId) return;
+
+            let url = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${liveChatId}&part=snippet&key=${apiKey}`;
+
+            try {
+                let response = await fetch(url);
+                let data = await response.json();
+
+                if (data.items) {
+                    data.items.forEach(message => {
+                        let text = message.snippet.displayMessage;
+
+                        if (text.includes("🔥")) {
+                            engagementScore += 2; // Raise temp by 2% per 🔥 emoji
+                        } 
+                        if (text.includes("💩")) {
+                            engagementScore -= 2; // Lower temp by 2% per 💩 emoji
+                        }
+
+                        engagementScore = Math.max(0, Math.min(100, engagementScore)); // Keep within 0-100%
+                    });
+
+                    updateThermometer();
+                }
+            } catch (error) {
+                console.error("Error fetching live chat messages:", error);
+            }
+
+            setTimeout(fetchChatMessages, 5000); // Fetch every 5 seconds
+        }
+
+        function updateThermometer() {
+            let mercury = document.getElementById("mercury");
+            mercury.style.height = engagementScore + "%";
+        }
+
+        getLiveChatId();
+    </script>
+</body>
+</html>
