@@ -39,7 +39,7 @@
         const apiKey = "AIzaSyDazxvM8C49xTkfWhkEV98HuhDj-qwl8hI"; // Replace with your YouTube API Key
 
         let liveChatId = "";  // Will store the live chat ID
-        let engagementScore = 50; // Start at neutral (50%)
+        let engagementScore = 0; // Start at neutral (50%)
 
         // 2. Function to get live chat ID from the YouTube API
         async function getLiveChatId() {
@@ -78,10 +78,10 @@
 
                         // Check for the presence of 🔥 (fire) or 💩 (poop) emoji in the chat message
                         if (text.includes("🔥")) {
-                            engagementScore += 2; // Increase temp by 2% for 🔥 emoji
+                            engagementScore += 10; // Increase temp by 2% for 🔥 emoji
                         } 
                         if (text.includes("💩")) {
-                            engagementScore -= 2; // Decrease temp by 2% for 💩 emoji
+                            engagementScore -= 10; // Decrease temp by 2% for 💩 emoji
                         }
 
                         // Keep engagement score within the 0-100% range
