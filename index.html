@@ -35,55 +35,77 @@
     </div>
 
     <script>
+        // 1. Define apiKey variable here
+        const apiKey = "AIzaSyDazxvM8C49xTkfWhkEV98HuhDj-qwl8hI"; // Replace with your YouTube API Key
+
+        let liveChatId = "";  // Will store the live chat ID
+        let engagementScore = 50; // Start at neutral (50%)
+
+        // 2. Function to get live chat ID from the YouTube API
         async function getLiveChatId() {
-    let channelId = "UClnaUYp6ENPd5Dnn0F19rew"; // Replace with your YouTube Channel ID
-    let url = `https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=active&broadcastType=all&key=${apiKey}`; // Corrected line
+            let channelId = "UClnaUYp6ENPd5Dnn0F19rew"; // Replace with your YouTube Channel ID
+            let url = `https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=active&broadcastType=all&key=${apiKey}`;
 
-    try {
-        let response = await fetch(url);
-        let data = await response.json();
+            try {
+                let response = await fetch(url);
+                let data = await response.json();
 
-        if (data.items && data.items.length > 0) {
-            liveChatId = data.items[0].snippet.liveChatId;
-            fetchChatMessages();
-        } else {
-            console.log("No live broadcast found.");
+                if (data.items && data.items.length > 0) {
+                    liveChatId = data.items[0].snippet.liveChatId;
+                    fetchChatMessages(); // Fetch chat messages once we have the live chat ID
+                } else {
+                    console.log("No live broadcast found.");
+                }
+            } catch (error) {
+                console.error("Error fetching live chat ID:", error);
+            }
         }
-    } catch (error) {
-        console.error("Error fetching live chat ID:", error);
-    }
-}
 
+        // 3. Function to fetch live chat messages
         async function fetchChatMessages() {
             if (!liveChatId) return;
 
-            let response = await fetch(url);
-            let data = await response.json();
+            let url = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${liveChatId}&part=snippet&key=${apiKey}`;
 
-            data.items.forEach(message => {
-                let text = message.snippet.displayMessage;
+            try {
+                let response = await fetch(url);
+                let data = await response.json();
 
-                if (text.includes("🔥")) {
-                    engagementScore += 2; // Raise temp by 2% per 🔥 emoji
-                } 
-                if (text.includes("💩")) {
-                    engagementScore -= 2; // Lower temp by 2% per 💩 emoji
+                if (data.items) {
+                    // Loop through the chat messages
+                    data.items.forEach(message => {
+                        let text = message.snippet.displayMessage;
+
+                        // Check for the presence of 🔥 (fire) or 💩 (poop) emoji in the chat message
+                        if (text.includes("🔥")) {
+                            engagementScore += 2; // Increase temp by 2% for 🔥 emoji
+                        } 
+                        if (text.includes("💩")) {
+                            engagementScore -= 2; // Decrease temp by 2% for 💩 emoji
+                        }
+
+                        // Keep engagement score within the 0-100% range
+                        engagementScore = Math.max(0, Math.min(100, engagementScore)); 
+                    });
+
+                    updateThermometer(); // Update thermometer based on engagement score
                 }
+            } catch (error) {
+                console.error("Error fetching chat messages:", error);
+            }
 
-                engagementScore = Math.max(0, Math.min(100, engagementScore)); // Keep within 0-100%
-            });
-
-            updateThermometer();
-            setTimeout(fetchChatMessages, 5000); // Fetch every 5 seconds
+            // Fetch new chat messages every 5 seconds
+            setTimeout(fetchChatMessages, 5000);
         }
 
+        // 4. Function to update the thermometer based on engagement score
         function updateThermometer() {
             let mercury = document.getElementById("mercury");
-            mercury.style.height = engagementScore + "%";
+            mercury.style.height = engagementScore + "%"; // Adjust the thermometer height based on the engagement score
         }
 
+        // 5. Start the process
         getLiveChatId();
     </script>
 </body>
 </html>
-
